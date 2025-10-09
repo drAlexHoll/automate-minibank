@@ -1,0 +1,15 @@
+# Test runner
+pytest
+
+# Browser automation
+selenium>=4.15.0
+
+# Reporting
+allure-pytest
+pytest-html
+
+# Utilities
+python-dotenv
+structlog
+Faker
+httpx  # Replaces requests 
