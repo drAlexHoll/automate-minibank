@@ -1,0 +1,2 @@
+[32mINFO    [0m utils.api_client:api_client.py:124 {"client": "MiniBankAPIClient", "event": "Initialized API client for tenant: tyulev", "logger": "utils.api_client", "level": "info"}
+[32mINFO    [0m httpx:_client.py:1025 HTTP Request: GET https://artqatest.ru/health "HTTP/1.1 200 OK"

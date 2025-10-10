@@ -1,0 +1,5 @@
+[32mINFO    [0m utils.api_client:api_client.py:124 {"client": "MiniBankAPIClient", "event": "Initialized API client for tenant: tyulev", "logger": "utils.api_client", "level": "info"}
+[32mINFO    [0m utils.api_client:api_client.py:287 {"client": "MiniBankAPIClient", "event": "Logging in user: invalid@email.com", "logger": "utils.api_client", "level": "info"}
+[32mINFO    [0m httpx:_client.py:1025 HTTP Request: POST https://artqatest.ru/api/tyulev/auth/login "HTTP/1.1 401 Unauthorized"
+[33mWARNING [0m utils.api_client:api_client.py:220 {"client": "MiniBankAPIClient", "status_code": 401, "message": "Email or password is incorrect", "event": "Request failed: POST /tyulev/auth/login", "logger": "utils.api_client", "level": "warning"}
+[31m[1mERROR   [0m utils.api_client:api_client.py:306 {"client": "MiniBankAPIClient", "event": "Login failed for invalid@email.com: Email or password is incorrect", "logger": "utils.api_client", "level": "error"}

@@ -1,0 +1,4 @@
+[32mINFO    [0m utils.api_client:api_client.py:124 {"client": "MiniBankAPIClient", "event": "Initialized API client for tenant: tyulev", "logger": "utils.api_client", "level": "info"}
+[32mINFO    [0m utils.api_client:api_client.py:124 {"client": "MiniBankAPIClient", "event": "Initialized API client for tenant: tyulev", "logger": "utils.api_client", "level": "info"}
+[32mINFO    [0m httpx:_client.py:1025 HTTP Request: POST https://artqatest.ru/api/tyulev/auth/validate "HTTP/1.1 401 Unauthorized"
+[33mWARNING [0m utils.api_client:api_client.py:220 {"client": "MiniBankAPIClient", "status_code": 401, "message": "Token is invalid or expired", "event": "Request failed: POST /tyulev/auth/validate", "logger": "utils.api_client", "level": "warning"}

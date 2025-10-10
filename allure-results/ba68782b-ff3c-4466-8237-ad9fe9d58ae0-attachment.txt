@@ -1,0 +1,10 @@
+[32mINFO    [0m ui.pages.base_page:base_page.py:123 {"page": "LoginPage", "event": "Navigating to: https://artqatest.ru/tyulev", "logger": "ui.pages.base_page", "level": "info"}
+[32mINFO    [0m ui.pages.base_page:base_page.py:474 {"page": "LoginPage", "event": "Page LoginPage loaded successfully", "logger": "ui.pages.base_page", "level": "info"}
+[32mINFO    [0m ui.pages.base_page:login_page.py:83 {"page": "LoginPage", "event": "Logging in with user: vip@bank.test", "logger": "ui.pages.base_page", "level": "info"}
+[32mINFO    [0m ui.pages.base_page:base_page.py:241 {"page": "LoginPage", "event": "Filled input [data-testid=\"email-input\"] with: vip@bank.test", "logger": "ui.pages.base_page", "level": "info"}
+[32mINFO    [0m ui.pages.base_page:base_page.py:241 {"page": "LoginPage", "event": "Filled input [data-testid=\"password-input\"] with: password123", "logger": "ui.pages.base_page", "level": "info"}
+[32mINFO    [0m ui.pages.base_page:base_page.py:227 {"page": "LoginPage", "event": "Clicked element: [data-testid=\"submit-button\"]", "logger": "ui.pages.base_page", "level": "info"}
+[32mINFO    [0m ui.pages.base_page:base_page.py:118 {"page": "LoginPage", "event": "URL changed from https://artqatest.ru/tyulev to https://artqatest.ru/tyulev/dashboard", "logger": "ui.pages.base_page", "level": "info"}
+[32mINFO    [0m ui.pages.base_page:base_page.py:474 {"page": "DashboardPage", "event": "Page DashboardPage loaded successfully", "logger": "ui.pages.base_page", "level": "info"}
+[32mINFO    [0m ui.pages.base_page:base_page.py:184 {"page": "DashboardPage", "event": "Clicked element by text: button containing 'Transfers'", "logger": "ui.pages.base_page", "level": "info"}
+[32mINFO    [0m ui.pages.base_page:base_page.py:474 {"page": "TransfersPage", "event": "Page TransfersPage loaded successfully", "logger": "ui.pages.base_page", "level": "info"}

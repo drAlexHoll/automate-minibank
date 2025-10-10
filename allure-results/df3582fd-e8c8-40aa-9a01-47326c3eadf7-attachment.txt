@@ -1,0 +1,29 @@
+[32mINFO    [0m utils.api_client:api_client.py:124 {"client": "MiniBankAPIClient", "event": "Initialized API client for tenant: tyulev", "logger": "utils.api_client", "level": "info"}
+[32mINFO    [0m utils.api_client:api_client.py:287 {"client": "MiniBankAPIClient", "event": "Logging in user: admin@bank.test", "logger": "utils.api_client", "level": "info"}
+[32mINFO    [0m httpx:_client.py:1025 HTTP Request: POST https://artqatest.ru/api/tyulev/auth/login "HTTP/1.1 200 OK"
+[32mINFO    [0m utils.api_client:api_client.py:301 {"client": "MiniBankAPIClient", "role": "ADMIN", "event": "Successfully logged in as admin@bank.test", "logger": "utils.api_client", "level": "info"}
+[32mINFO    [0m httpx:_client.py:1025 HTTP Request: POST https://artqatest.ru/api/tyulev/users "HTTP/1.1 201 Created"
+[32mINFO    [0m utils.api_client:api_client.py:418 {"client": "MiniBankAPIClient", "event": "Created user: 232651a5-beb8-45d7-abfe-35fd8aa21528", "logger": "utils.api_client", "level": "info"}
+[32mINFO    [0m httpx:_client.py:1025 HTTP Request: POST https://artqatest.ru/api/tyulev/accounts "HTTP/1.1 201 Created"
+[32mINFO    [0m utils.api_client:api_client.py:517 {"client": "MiniBankAPIClient", "event": "Created account: cc8b12fb-7833-44de-907c-c7484eda8400", "logger": "utils.api_client", "level": "info"}
+[32mINFO    [0m httpx:_client.py:1025 HTTP Request: POST https://artqatest.ru/api/tyulev/accounts "HTTP/1.1 201 Created"
+[32mINFO    [0m utils.api_client:api_client.py:517 {"client": "MiniBankAPIClient", "event": "Created account: 745aa32c-0364-47e4-9b3c-1a12e35d8d3d", "logger": "utils.api_client", "level": "info"}
+[32mINFO    [0m utils.api_client:api_client.py:287 {"client": "MiniBankAPIClient", "event": "Logging in user: 1gkebdot@test.com", "logger": "utils.api_client", "level": "info"}
+[32mINFO    [0m httpx:_client.py:1025 HTTP Request: POST https://artqatest.ru/api/tyulev/auth/login "HTTP/1.1 200 OK"
+[32mINFO    [0m utils.api_client:api_client.py:301 {"client": "MiniBankAPIClient", "role": "USER", "event": "Successfully logged in as 1gkebdot@test.com", "logger": "utils.api_client", "level": "info"}
+[32mINFO    [0m httpx:_client.py:1025 HTTP Request: GET https://artqatest.ru/api/tyulev/accounts "HTTP/1.1 200 OK"
+[32mINFO    [0m ui.pages.base_page:base_page.py:123 {"page": "LoginPage", "event": "Navigating to: https://artqatest.ru/tyulev", "logger": "ui.pages.base_page", "level": "info"}
+[32mINFO    [0m ui.pages.base_page:base_page.py:474 {"page": "LoginPage", "event": "Page LoginPage loaded successfully", "logger": "ui.pages.base_page", "level": "info"}
+[32mINFO    [0m ui.pages.base_page:login_page.py:83 {"page": "LoginPage", "event": "Logging in with user: 1gkebdot@test.com", "logger": "ui.pages.base_page", "level": "info"}
+[32mINFO    [0m ui.pages.base_page:base_page.py:241 {"page": "LoginPage", "event": "Filled input [data-testid=\"email-input\"] with: 1gkebdot@test.com", "logger": "ui.pages.base_page", "level": "info"}
+[32mINFO    [0m ui.pages.base_page:base_page.py:241 {"page": "LoginPage", "event": "Filled input [data-testid=\"password-input\"] with: TestPassword123!", "logger": "ui.pages.base_page", "level": "info"}
+[32mINFO    [0m ui.pages.base_page:base_page.py:227 {"page": "LoginPage", "event": "Clicked element: [data-testid=\"submit-button\"]", "logger": "ui.pages.base_page", "level": "info"}
+[32mINFO    [0m ui.pages.base_page:base_page.py:118 {"page": "LoginPage", "event": "URL changed from https://artqatest.ru/tyulev to https://artqatest.ru/tyulev/dashboard", "logger": "ui.pages.base_page", "level": "info"}
+[32mINFO    [0m ui.pages.base_page:base_page.py:474 {"page": "DashboardPage", "event": "Page DashboardPage loaded successfully", "logger": "ui.pages.base_page", "level": "info"}
+[32mINFO    [0m ui.pages.base_page:base_page.py:184 {"page": "DashboardPage", "event": "Clicked element by text: button containing 'Transfers'", "logger": "ui.pages.base_page", "level": "info"}
+[32mINFO    [0m ui.pages.base_page:base_page.py:474 {"page": "TransfersPage", "event": "Page TransfersPage loaded successfully", "logger": "ui.pages.base_page", "level": "info"}
+[32mINFO    [0m ui.pages.base_page:base_page.py:241 {"page": "TransfersPage", "event": "Filled input [data-testid=\"amount-input\"] with: 50.0", "logger": "ui.pages.base_page", "level": "info"}
+[32mINFO    [0m ui.pages.base_page:base_page.py:241 {"page": "TransfersPage", "event": "Filled input [data-testid=\"description-input\"] with: UI Test: Transfer between own accounts", "logger": "ui.pages.base_page", "level": "info"}
+[32mINFO    [0m ui.pages.base_page:base_page.py:227 {"page": "TransfersPage", "event": "Clicked element: button[type=\"submit\"]", "logger": "ui.pages.base_page", "level": "info"}
+[32mINFO    [0m utils.api_client:api_client.py:333 {"client": "MiniBankAPIClient", "event": "Logging out current user", "logger": "utils.api_client", "level": "info"}
+[32mINFO    [0m httpx:_client.py:1025 HTTP Request: POST https://artqatest.ru/api/tyulev/auth/logout "HTTP/1.1 200 OK"

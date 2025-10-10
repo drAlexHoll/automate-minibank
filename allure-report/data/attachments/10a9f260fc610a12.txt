@@ -1,0 +1,8 @@
+[32mINFO    [0m utils.api_client:api_client.py:124 {"client": "MiniBankAPIClient", "event": "Initialized API client for tenant: tyulev", "logger": "utils.api_client", "level": "info"}
+[32mINFO    [0m utils.api_client:api_client.py:287 {"client": "MiniBankAPIClient", "event": "Logging in user: vip@bank.test", "logger": "utils.api_client", "level": "info"}
+[32mINFO    [0m httpx:_client.py:1025 HTTP Request: POST https://artqatest.ru/api/tyulev/auth/login "HTTP/1.1 200 OK"
+[32mINFO    [0m utils.api_client:api_client.py:301 {"client": "MiniBankAPIClient", "role": "VIP_USER", "event": "Successfully logged in as vip@bank.test", "logger": "utils.api_client", "level": "info"}
+[32mINFO    [0m httpx:_client.py:1025 HTTP Request: GET https://artqatest.ru/api/tyulev/transfers "HTTP/1.1 200 OK"
+[32mINFO    [0m httpx:_client.py:1025 HTTP Request: GET https://artqatest.ru/api/tyulev/transfers/limits "HTTP/1.1 200 OK"
+[32mINFO    [0m utils.api_client:api_client.py:333 {"client": "MiniBankAPIClient", "event": "Logging out current user", "logger": "utils.api_client", "level": "info"}
+[32mINFO    [0m httpx:_client.py:1025 HTTP Request: POST https://artqatest.ru/api/tyulev/auth/logout "HTTP/1.1 200 OK"
