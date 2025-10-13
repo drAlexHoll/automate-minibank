@@ -81,16 +81,16 @@ class TestUIAuthentication:
         simple_user = settings.get_user(UserRole.USER)
         login_page.login(simple_user.email, simple_user.password)
 
-        #Проверяем, что попали на Dashboard
+        # Проверяем, что попали на Dashboard
         dashboard_page = DashboardPage(driver)
         dashboard_page.assert_page_loaded()
 
-        #Проверяем, что URL верный
+        # Проверяем, что URL верный
         current_url = driver.current_url
         assert "dashboard" in current_url.lower(), f"SIMPLE user not on dashboard: {current_url}"
 
 
-    def test_login_logout_flow(self,driver, api_client: MiniBankAPIClient):
+    def test_login_logout_flow(self, driver):
         """Тест логаута USER пользователя"""
         login_page = LoginPage(driver)
         login_page.navigate_to()
@@ -117,16 +117,16 @@ class TestUIAuthentication:
         login_page.navigate_to()
         login_page.assert_page_loaded()
 
-        #Определяю USER пользователя
+        # Определяю USER пользователя
         simple_user = settings.get_user(UserRole.USER)
         login_page.enter_email(simple_user.email)
 
-        #Добавляю неверные цифры к паролю
+        # Добавляю неверные цифры к паролю
         login_page.enter_password(simple_user.password+"123")
         login_page.click_submit()
 
-        #Проверяю, что всплывающее окно с ошибкой появилось на экране
+        # Проверяю, что всплывающее окно с ошибкой появилось на экране
         login_page.assert_error_visible()
 
-        #Проверяю, что мы остались на странице Login
+        # Проверяю, что мы остались на странице Login
         assert "login" in login_page.get_page_title().lower(), f"SIMPLE user not on login: {login_page.get_page_title()} page"
