@@ -2,9 +2,9 @@ import pytest
 
 from config.settings import settings, UserRole
 
+
 @pytest.mark.api
 @pytest.mark.auth
-
 class TestMyAuth:
     def test_my_first_api_login(self, api_client):
         """Мой первый API тест логина"""
@@ -29,9 +29,9 @@ class TestMyAuth:
         user_data = data["user"]
 
         # email и role соответствует переданному в запрос
-        assert user_data["email"] == simple_user.email, f"Email не совпадает: {user_data['email']} != {simple_user.email}"
+        assert user_data[
+                   "email"] == simple_user.email, f"Email не совпадает: {user_data['email']} != {simple_user.email}"
         assert user_data["role"] == UserRole.USER.value, f"Неверная роль: {user_data['role']} != {UserRole.USER.value}"
-
 
     def test_login_wrong_password(self, api_client):
         """Тест с передачей неверного пароля в запросе"""
@@ -40,7 +40,7 @@ class TestMyAuth:
         simple_user = settings.get_user(UserRole.USER)
 
         # Выполнение запроса
-        login_response = api_client.login(simple_user.email, simple_user.password+"123")
+        login_response = api_client.login(simple_user.email, simple_user.password + "123")
 
         # Проверка ответа
         assert login_response.success is False, f"Статус ответа: {login_response.success}"
@@ -50,7 +50,6 @@ class TestMyAuth:
 
         # Проверка, что токен в ответе отсутствует
         assert "token" not in data, f"В ответе присутствует токен: {data['token']}"
-
 
     def test_already_logged_in_user(self, logged_in_user, api_client):
         """Тест с уже залогиненным пользователем"""
@@ -62,7 +61,6 @@ class TestMyAuth:
         # Проверяем, что пользователь USER авторизовался
         assert auth_response["email"] == simple_user.email, f"Авторизован не пользователь: {simple_user.email}"
 
-
     def test_token_validation(self, logged_in_user, api_client):
         """Тест на валидацию токена"""
 
@@ -71,7 +69,6 @@ class TestMyAuth:
 
         assert validation_token.success, f"Валидация токена не прошла: {validation_token.message}"
         assert validation_token.status_code == 200
-
 
     def test_login_different_roles(self, api_client, role):
         """Тест логина разных ролей через параметризацию"""
@@ -82,22 +79,21 @@ class TestMyAuth:
         # Выполнение запроса
         login_response = api_client.login(user.email, user.password)
 
-        # Извлекаем данные из ответа
-        data = login_response.data
+        assert login_response.status_code == 200, f"Неверный статус-код: {login_response.status_code}"
 
         # Извлекаем информацию о пользователе
-        user_data = data["user"]
+        user_data = login_response.data["user"]
 
-        # role соответствует переданному в запрос
+        # email и role соответствует переданному в запрос
         assert user_data["role"] == role.value, f"Неверная роль: {user_data['role']} != {role.value}"
-
+        assert user_data["email"] == user.email, f"Email не совпадает: {user_data['email']} != {user.email}"
 
     @pytest.mark.parametrize("email, password, expected_status", [
-        ("",settings.get_user(UserRole.USER).password, 400),
-        (settings.get_user(UserRole.USER).email, "", 400),
-        ("email@email.ru", settings.get_user(UserRole.USER).password, 401),
-        (settings.get_user(UserRole.USER).email, "123456", 401),
-        pytest.param("", "", 400, marks = pytest.mark.skip(reason="Проверка избыточна и покрывается предыдущими"))
+        ("", "password123", 400),
+        ("user@bank.test", "", 400),
+        ("email@email.ru", "password123", 401),
+        ("user@bank.test", "123456", 401),
+        pytest.param("", "", 400, marks=pytest.mark.skip(reason="Проверка избыточна и покрывается предыдущими"))
 
     ], ids=[
         "Test with empty email",
@@ -115,4 +111,3 @@ class TestMyAuth:
         # Проверка ответа
         assert login_response.success is False, f"Статус ответа: {login_response.success}"
         assert login_response.status_code == expected_status, f"Статус код: {login_response.status_code}"
-
