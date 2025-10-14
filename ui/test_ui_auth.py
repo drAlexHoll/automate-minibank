@@ -18,6 +18,7 @@ class TestUIAuthentication:
     
     def test_successful_login(self, driver, api_client: MiniBankAPIClient):
         """Тест успешного логина пользователя через UI"""
+
         # Переходим на страницу логина
         login_page = LoginPage(driver)
         login_page.navigate_to()
@@ -36,6 +37,7 @@ class TestUIAuthentication:
 
     def test_successful_logout(self, driver, api_client: MiniBankAPIClient):
         """Тест успешного логаута через UI"""
+
         # Сначала логинимся через UI
         login_page = LoginPage(driver)
         login_page.navigate_to()
@@ -53,49 +55,38 @@ class TestUIAuthentication:
         
         # Проверяем что попали на страницу логина
         login_page.assert_page_loaded()
-        
- 
-
-    def test_login_with_vip_user(self, driver):
-        """Тест логина VIP пользователя"""
-        login_page = LoginPage(driver)
-        login_page.navigate_to()
-        login_page.assert_page_loaded()
-        
-        vip_user = settings.get_user(UserRole.VIP_USER)
-        login_page.login(vip_user.email, vip_user.password)
-        
-        dashboard_page = DashboardPage(driver)
-        dashboard_page.assert_page_loaded()
-        
-        current_url = driver.current_url
-        assert "dashboard" in current_url.lower(), f"VIP user not on dashboard: {current_url}"
 
 
-    def test_basic_login(self, driver):
-        """Тест логина USER пользователя"""
+    def test_login_different_roles(self, driver, role):
+        """Тест логина разных ролей"""
+
+        # Сначала логинимся через UI
         login_page = LoginPage(driver)
         login_page.navigate_to()
         login_page.assert_page_loaded()
 
-        simple_user = settings.get_user(UserRole.USER)
-        login_page.login(simple_user.email, simple_user.password)
+        # Подготовка данных
+        user = settings.get_user(role)
 
-        # Проверяем, что попали на Dashboard
+        # Выполнение логина
+        login_page.login(user.email, user.password)
+
         dashboard_page = DashboardPage(driver)
         dashboard_page.assert_page_loaded()
-
-        # Проверяем, что URL верный
+        
         current_url = driver.current_url
-        assert "dashboard" in current_url.lower(), f"SIMPLE user not on dashboard: {current_url}"
+        assert "dashboard" in current_url.lower(), f"{role.value} user not on dashboard: {current_url}"
 
 
     def test_login_logout_flow(self, driver):
         """Тест логаута USER пользователя"""
+
+        # Сначала логинимся через UI
         login_page = LoginPage(driver)
         login_page.navigate_to()
         login_page.assert_page_loaded()
 
+        # Подготовка данных
         simple_user = settings.get_user(UserRole.USER)
         login_page.login(simple_user.email, simple_user.password)
 
@@ -113,6 +104,7 @@ class TestUIAuthentication:
 
     def test_login_with_wrong_password(self, driver):
         """Тест с вводом невалидных данных при авторизации USER пользователя"""
+
         login_page = LoginPage(driver)
         login_page.navigate_to()
         login_page.assert_page_loaded()

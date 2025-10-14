@@ -484,4 +484,19 @@ def make_account_for_user(api_client: MiniBankAPIClient) -> Callable[[str, float
             pytest.fail(f"Не удалось создать счёт: {a_res.message}")
         return {"account": a_res.data["account"]}
 
-    return _creator 
+    return _creator
+
+# ──────────────────────────────────────────────────────────────────────────────
+# ОБЩИЕ ФИКСТУРЫ
+# ──────────────────────────────────────────────────────────────────────────────
+
+ROLES = [
+    (UserRole.USER, "Login as USER"),
+    (UserRole.ADMIN, "Login as ADMIN"),
+    (UserRole.VIP_USER, "Login as VIP_USER"),
+    (UserRole.SUPPORT, "Login as SUPPORT"),
+]
+
+@pytest.fixture(params=ROLES, ids=[r[1] for r in ROLES])
+def role(request):
+    return request.param[0]

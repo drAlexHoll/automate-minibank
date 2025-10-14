@@ -4,6 +4,7 @@ from config.settings import settings, UserRole
 
 @pytest.mark.api
 @pytest.mark.auth
+
 class TestMyAuth:
     def test_my_first_api_login(self, api_client):
         """Мой первый API тест логина"""
@@ -70,3 +71,48 @@ class TestMyAuth:
 
         assert validation_token.success, f"Валидация токена не прошла: {validation_token.message}"
         assert validation_token.status_code == 200
+
+
+    def test_login_different_roles(self, api_client, role):
+        """Тест логина разных ролей через параметризацию"""
+
+        # Подготовка данных
+        user = settings.get_user(role)
+
+        # Выполнение запроса
+        login_response = api_client.login(user.email, user.password)
+
+        # Извлекаем данные из ответа
+        data = login_response.data
+
+        # Извлекаем информацию о пользователе
+        user_data = data["user"]
+
+        # role соответствует переданному в запрос
+        assert user_data["role"] == role.value, f"Неверная роль: {user_data['role']} != {role.value}"
+
+
+    @pytest.mark.parametrize("email, password, expected_status", [
+        ("",settings.get_user(UserRole.USER).password, 400),
+        (settings.get_user(UserRole.USER).email, "", 400),
+        ("email@email.ru", settings.get_user(UserRole.USER).password, 401),
+        (settings.get_user(UserRole.USER).email, "123456", 401),
+        pytest.param("", "", 400, marks = pytest.mark.skip(reason="Проверка избыточна и покрывается предыдущими"))
+
+    ], ids=[
+        "Test with empty email",
+        "Test with empty password",
+        "Test with wrong email",
+        "Test with wrong password",
+        "(SKIP) Test with empty email and password"
+    ])
+    def test_login_errors(self, api_client, email, password, expected_status):
+        """Параметризированный тест ошибок логина"""
+
+        # Выполнение запроса
+        login_response = api_client.login(email, password)
+
+        # Проверка ответа
+        assert login_response.success is False, f"Статус ответа: {login_response.success}"
+        assert login_response.status_code == expected_status, f"Статус код: {login_response.status_code}"
+
