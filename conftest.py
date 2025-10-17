@@ -10,18 +10,22 @@
 - ФАБРИКИ ДАННЫХ (гибкие генераторы пользователей/счетов)
 """
 
-import pytest
+import base64
 import os
 import sys
-import base64
 from pathlib import Path
-from typing import Generator, Dict, Any, Callable, Optional
-from selenium import webdriver
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.chrome.options import Options as ChromeOptions
-from selenium.webdriver.firefox.options import Options as FirefoxOptions
-from selenium.webdriver.edge.options import Options as EdgeOptions
+from typing import Generator, Dict, Any, Callable
+
+import pytest
 import structlog
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options as ChromeOptions
+from selenium.webdriver.edge.options import Options as EdgeOptions
+from selenium.webdriver.firefox.options import Options as FirefoxOptions
+from selenium.webdriver.support.ui import WebDriverWait
+
+from ui.pages.dashboard_page import DashboardPage
+from ui.pages.login_page import LoginPage
 
 # ──────────────────────────────────────────────────────────────────────────────
 # СИСТЕМНЫЕ НАСТРОЙКИ И ЛОГИРОВАНИЕ
@@ -56,6 +60,7 @@ structlog.configure(
 
 logger = structlog.get_logger(__name__)
 
+
 # ──────────────────────────────────────────────────────────────────────────────
 # ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (локальные)
 # ──────────────────────────────────────────────────────────────────────────────
@@ -69,6 +74,15 @@ def _get_browser_options(browser_name: str, headless: bool = True):
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--window-size=1920,1080")
+        options.add_experimental_option(
+            "prefs",
+            {
+                "credentials_enable_service": False,
+                "profile.password_manager_enabled": False,
+                "autofill.profile_enabled": False,
+                "autofill.credit_card_enabled": False,
+            }
+        )
         return options
     elif browser_name.lower() == "firefox":
         options = FirefoxOptions()
@@ -143,6 +157,7 @@ def _capture_screenshot_bytes(driver) -> bytes:
     except Exception as e:
         logger.warning(f"Standard screenshot failed: {e}")
         return b""
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 # ХУКИ PYTEST И ДОП. ОПЦИИ
@@ -222,6 +237,7 @@ def pytest_addoption(parser):
         help="Выбрать браузер для UI: chrome|firefox|edge",
     )
 
+
 # ──────────────────────────────────────────────────────────────────────────────
 # UI ФИКСТУРЫ
 # ──────────────────────────────────────────────────────────────────────────────
@@ -259,6 +275,7 @@ def driver(request) -> Generator[webdriver.Remote, None, None]:
 def wait(driver) -> WebDriverWait:
     """Явные ожидания для текущего драйвера с таймаутом из настроек."""
     return WebDriverWait(driver, settings.browser_config.element_wait_timeout)
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 # API ФИКСТУРЫ (клиент и быстрый логин ролей)
@@ -307,6 +324,7 @@ def logged_in_support(api_client: MiniBankAPIClient) -> Dict[str, Any]:
     if not login_response.success:
         pytest.skip(f"Не удалось залогиниться как поддержка: {login_response.message}")
     return api_client.get_current_user()
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 # ДАННЫЕ ДЛЯ ТЕСТОВ (готовые сценарии)
@@ -407,6 +425,7 @@ def user_with_two_accounts(api_client: MiniBankAPIClient):
         "accounts": [account1, account2]
     }
 
+
 # ──────────────────────────────────────────────────────────────────────────────
 # ФАБРИКИ ДАННЫХ (гибкие генераторы пользователей/счетов)
 # ──────────────────────────────────────────────────────────────────────────────
@@ -421,7 +440,9 @@ def make_user_with_account(api_client: MiniBankAPIClient) -> Callable[[UserRole,
     Пример:
       data = make_user_with_account(UserRole.USER, 200.0, "CHECKING")
     """
-    def _creator(role: UserRole = UserRole.USER, initial_balance: float = 0.0, account_type: str = "CHECKING") -> Dict[str, Any]:
+
+    def _creator(role: UserRole = UserRole.USER, initial_balance: float = 0.0, account_type: str = "CHECKING") -> Dict[
+        str, Any]:
         # Нужны админские права для создания пользователей/счетов
         admin_login = api_client.login_as_role(UserRole.ADMIN)
         if not admin_login.success:
@@ -468,6 +489,7 @@ def make_account_for_user(api_client: MiniBankAPIClient) -> Callable[[str, float
     Пример:
       acc = make_account_for_user(user_id, 500.0, "SAVINGS")
     """
+
     def _creator(user_id: str, initial_balance: float = 0.0, account_type: str = "CHECKING") -> Dict[str, Any]:
         # Создание счетов доступно админу
         admin_login = api_client.login_as_role(UserRole.ADMIN)
@@ -486,8 +508,9 @@ def make_account_for_user(api_client: MiniBankAPIClient) -> Callable[[str, float
 
     return _creator
 
+
 # ──────────────────────────────────────────────────────────────────────────────
-# ОБЩИЕ ФИКСТУРЫ
+# ОБЩИЕ ФИКСТУРЫ для UI и API тестов
 # ──────────────────────────────────────────────────────────────────────────────
 
 ROLES = [
@@ -497,6 +520,35 @@ ROLES = [
     (UserRole.SUPPORT, "Login as SUPPORT"),
 ]
 
+
 @pytest.fixture(params=ROLES, ids=[r[1] for r in ROLES])
 def role(request):
     return request.param[0]
+
+
+@pytest.fixture(scope="function")
+def login_as(driver):
+    """Хелпер для логина под любой ролью в ПО"""
+
+    def _login(role):
+        # Переходим на страницу логина
+        login_page = LoginPage(driver)
+        login_page.navigate_to()
+
+        # Проверяем, что страница загрузилась
+        login_page.assert_page_loaded()
+
+        # Логинимся как пользователь с переданной ролью
+        user = settings.get_user(role)
+        login_page.login(user.email, user.password)
+
+        # Проверяем что попали на dashboard
+        dashboard_page = DashboardPage(driver)
+        dashboard_page.assert_page_loaded()
+
+        current_url = driver.current_url
+        assert "dashboard" in current_url.lower(), f"{user.role} user not on dashboard: {current_url}"
+
+        return dashboard_page
+
+    return _login

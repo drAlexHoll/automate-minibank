@@ -3,13 +3,10 @@
 Обрабатывает действия по управлению счетами
 """
 
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException
 from typing import List
+
 import structlog
+from selenium import webdriver
 
 from .base_page import BasePage
 
@@ -65,20 +62,24 @@ class AccountsPage(BasePage):
     def create_account(self, account_type: str = "CHECKING", initial_balance: float = 0.0, user_id: str = None):
         """Создает новый счет"""
         self.open_create_form()
-        
+
         # Выбираем пользователя если админ
         if user_id and self.is_element_visible(self.selectors["user_select"], timeout=1):
             self.select_option(self.selectors["user_select"], user_id)
-        
+
         # Выбираем тип счета
         self.select_option(self.selectors["account_type_select"], account_type)
-        
+
         # Заполняем начальный баланс если поле видимо
         if initial_balance > 0 and self.is_element_visible(self.selectors["initial_balance_input"], timeout=1):
             self.fill_input(self.selectors["initial_balance_input"], str(initial_balance))
-        
+
         self.click_element(self.selectors["submit_create"])
         self.wait_for_loading_to_complete()
+
+    def submit_create(self):
+        """Создание счета"""
+        self.click_element(self.selectors["submit_create"])
 
     def cancel_create(self):
         """Отменяет создание счета"""
@@ -117,7 +118,30 @@ class AccountsPage(BasePage):
     def assert_error_message(self, message: str = None):
         """Проверяет отображение сообщения об ошибке"""
         assert self.is_element_visible(self.selectors["error_message"]), "Error message not visible"
-        
+
         if message:
             error_text = self.get_text(self.selectors["error_message"])
-            assert message in error_text, f"Expected '{message}' in error text '{error_text}'" 
+            assert message in error_text, f"Expected '{message}' in error text '{error_text}'"
+
+    def assert_create_button(self):
+        """Проверяет видимость кнопки создания нового счет"""
+        assert self.is_element_visible(self.selectors["create_button"]), "Expected create button not visible"
+
+    def assert_user_select_visible(self):
+        """Проверяет видимость поля для выбора пользователя"""
+        assert self.is_element_immediately_visible(self.selectors["user_select"]), "Expected user select visible"
+
+    def assert_user_select_no_visible(self):
+        """Проверяет, что у пользователя нет видимости поля для выбора пользователя"""
+        assert not self.is_element_immediately_visible(
+            self.selectors["user_select"]), "Expected user select not visible"
+
+    def assert_user_initial_balance_visible(self):
+        """Проверяет видимость поля для установки начального баланса"""
+        assert self.is_element_immediately_visible(
+            self.selectors["initial_balance_input"]), "Expected user initial_balance_input visible"
+
+    def assert_user_initial_balance_no_visible(self):
+        """Проверяет, что у пользователя нет видимости поля установки начального баланса"""
+        assert not self.is_element_immediately_visible(
+            self.selectors["initial_balance_input"]), "Expected user initial_balance_input not visible"
