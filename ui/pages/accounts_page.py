@@ -90,6 +90,31 @@ class AccountsPage(BasePage):
         cards = self.find_elements(self.selectors["account_card"])
         return [card.text for card in cards]
 
+    def get_account_cards_count(self) -> int:
+        """Возвращает количество карточек счетов на странице"""
+        return len(self.find_elements(self.selectors["account_card"]))
+
+    def get_account_cards_numbers(self) -> List[str]:
+        """Возвращаем список номеров счетов из карточек"""
+        account_cards = self.get_account_cards()
+        account_numbers = []
+
+        for text in account_cards:
+            lines = [line.strip() for line in text.split("\n") if line.strip()]
+
+            possible_numbers = [line for line in lines if line.replace(" ", "").isdigit()]
+            if len(possible_numbers):
+                account_numbers.append(possible_numbers[0])
+
+        return account_numbers
+
+    def get_newest_account_number(self) -> str:
+        """Получает номер последнего созданного счёта"""
+        account_numbers = self.get_account_cards_numbers()
+        if not account_numbers:
+            raise ValueError("Не найдено ни одного счета на странице")
+        return account_numbers[0]
+
     def delete_account(self, account_id: str):
         """Удаляет счет по ID"""
         delete_selector = f'[data-testid="delete-button-{account_id}"]'
@@ -131,7 +156,7 @@ class AccountsPage(BasePage):
         """Проверяет видимость поля для выбора пользователя"""
         assert self.is_element_immediately_visible(self.selectors["user_select"]), "Expected user select visible"
 
-    def assert_user_select_no_visible(self):
+    def assert_user_select_not_visible(self):
         """Проверяет, что у пользователя нет видимости поля для выбора пользователя"""
         assert not self.is_element_immediately_visible(
             self.selectors["user_select"]), "Expected user select not visible"
@@ -141,7 +166,7 @@ class AccountsPage(BasePage):
         assert self.is_element_immediately_visible(
             self.selectors["initial_balance_input"]), "Expected user initial_balance_input visible"
 
-    def assert_user_initial_balance_no_visible(self):
+    def assert_user_initial_balance_not_visible(self):
         """Проверяет, что у пользователя нет видимости поля установки начального баланса"""
         assert not self.is_element_immediately_visible(
             self.selectors["initial_balance_input"]), "Expected user initial_balance_input not visible"

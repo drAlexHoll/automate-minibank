@@ -16,48 +16,39 @@ from utils.api_client import MiniBankAPIClient
 class TestUIAccounts:
     """UI тесты для раздела со счетами (account_page)"""
 
-    def test_view_user_accounts(self, driver, login_as):
-        """Тест просмотра счетов пользователя (USER)"""
+    def test_view_accounts_roles(self, driver, account_page_as_role, role):
+        """Тест просмотра счетов ролей"""
 
-        # Авторизуемся за пользователя USER
-        auth_as_user = login_as(UserRole.USER)
-
-        # Открываем вкладку 💳 Accounts
-        auth_as_user.open_accounts()
-
-        account_page = AccountsPage(driver)
-        account_page.assert_page_loaded()
-
-        # Определяем в переменную все счета пользователя
+        account_page = account_page_as_role
         accounts = account_page.get_account_cards()
 
         # Проверяем, что количество счетов больше 0
-        assert len(accounts) > 0, "У пользователя нет ни одного счета"
+        assert accounts, f"Для роли {role.value} не отображаются счета"
+        print(f"[{role.value}] Первый счет: {accounts[0]}")
 
-        # Выводим информацию по первому счету
-        print(f"Первый счет: {accounts[0]}")
-
-    def test_user_account_permissions(self, driver, login_as, api_client):
+    @pytest.mark.parametrize(
+        "role, expect_user_select, expect_initial_balance",
+        [
+            (UserRole.ADMIN, True, True),
+            (UserRole.USER, False, False),
+            (UserRole.VIP_USER, False, False),
+            (UserRole.SUPPORT, True, True),
+        ],
+        ids=[
+            "ADMIN", "USER", "VIP_USER", "SUPPORT",
+        ]
+    )
+    def test_user_account_permissions(self, driver, api_client, account_page_as_role, role, expect_user_select,
+                                      expect_initial_balance):
         """Проверка прав для пользователя USER"""
-        # Авторизуемся за пользователя USER
-        auth_as_user = login_as(UserRole.USER)
 
-        # Открываем вкладку 💳 Accounts
-        auth_as_user.open_accounts()
-
-        account_page = AccountsPage(driver)
-        account_page.assert_page_loaded()
-
-        # Проверяем, что кнопка есть кнопка создания счетов
-        account_page.assert_create_button()
+        account_page = account_page_as_role
 
         # Получаю из UI номера счетов
-        accounts = account_page.get_account_cards()
-        accounts_numbers = [line.split("\n")[2].strip() for line in
-                            accounts]  # Использую листкомпрехеншинс, где забираю из полученного ответа только номера счетов
+        accounts_numbers = account_page.get_account_cards_numbers()
 
         # Получаю из API все счета пользователя
-        api_client.login_as_role(UserRole.USER)
+        api_client.login_as_role(role)
         api_get_accounts = api_client.get_accounts().data["accounts"]
         api_account_numbers = [account["account_number"] for account in api_get_accounts]
 
@@ -68,71 +59,44 @@ class TestUIAccounts:
         # Открываю форму создания счета
         account_page.open_create_form()
 
-        # Проверяем, что в форме НЕТ поля выбора пользователя
-        account_page.assert_user_select_no_visible()
+        # Проверяем видимость полей
+        if expect_user_select:
+            account_page.assert_user_select_visible()
+        else:
+            account_page.assert_user_select_not_visible()
 
-        # Проверяем, что в форме НЕТ поля установки начального баланса
-        account_page.assert_user_initial_balance_no_visible()
+        if expect_initial_balance:
+            account_page.assert_user_initial_balance_visible()
+        else:
+            account_page.assert_user_initial_balance_not_visible()
 
-    def test_admin_account_permissions(self, driver, login_as):
-        """Проверка прав для пользователя ADMIN"""
-        # Авторизуемся за пользователя USER
-        auth_as_admin = login_as(UserRole.ADMIN)
-
-        # Открываем вкладку 💳 Accounts
-        auth_as_admin.open_accounts()
-
-        account_page = AccountsPage(driver)
-        account_page.assert_page_loaded()
-
-        # Проверяем, что кнопка есть кнопка создания счетов
-        account_page.assert_create_button()
-
-        # Открываю форму создания счета
-        account_page.open_create_form()
-
-        # Проверяем, что в форме ЕСТЬ поля выбора пользователя
-        account_page.assert_user_select_visible()
-
-        # Проверяем, что в форме ЕСТЬ поля установки начального баланса
-        account_page.assert_user_initial_balance_visible()
-
-        # Закрываем форму создания счета
-        account_page.cancel_create()
-
-    def test_create_basic_account(self, driver, logged_in_admin, login_as):
+    def test_create_basic_account(self, driver, logged_in_admin, login_as, checking_account_data):
         """Проверка создания счета пользователем ADMIN"""
 
         # Авторизуемся за пользователя ADMIN
         auth_as_admin = login_as(UserRole.ADMIN)
         auth_as_admin.open_accounts()
 
-        # Открываем вкладку 💳 Accounts
+        # Открываем вкладку 💳 Account
         account_page = AccountsPage(driver)
         account_page.assert_page_loaded()
 
         # Узнаем, сколько счетов было ДО создания нового счета
-        accounts_before_create = len(account_page.find_elements(account_page.selectors["account_card"]))
+        accounts_before_create = account_page.get_account_cards_count()
 
         # Заполняем данные счета и создаем
-        account_page.create_account(
-            account_type="CHECKING",
-            initial_balance=333,
-            user_id=logged_in_admin["id"]
-        )
+        account_page.create_account(**checking_account_data, user_id=logged_in_admin["id"])
 
         # Узнаем, сколько стало счетов ПОСЛЕ создания счета
         account_page.wait_for_element_count(account_page.selectors["account_card"], accounts_before_create + 1)
-        accounts_after_create = len(account_page.find_elements(account_page.selectors["account_card"]))
+        accounts_after_create = account_page.get_account_cards_count()
 
         # Проверяем, что счет создался
         assert accounts_after_create == accounts_before_create + 1, "Новый счет не создался"
 
         # Забираем account_card нового счёта
-        get_all_accounts_card = account_page.get_account_cards()
-        split_to_only_cards_numbers = [line.split("\n")[4].strip() for line in
-                                       get_all_accounts_card]  # Использую листкомпрехеншинс, где забираю из полученного ответа только номера счетов
-        new_cards_number = split_to_only_cards_numbers[0]  # Забираю account_card_number с нового созданного счета
+        numbers = account_page.get_account_cards_numbers()
+        new_cards_number = account_page.get_newest_account_number()
 
         # Обновляем страницу
         account_page.refresh_page()
@@ -141,15 +105,14 @@ class TestUIAccounts:
         auth_as_admin.open_accounts()
 
         # Проверяем, что новый счет есть среди остальных
+        assert new_cards_number in numbers, f"Счет {new_cards_number} не найден в UI"
 
-        assert new_cards_number in split_to_only_cards_numbers, f"Счет {new_cards_number[0]} не найден в UI"
-
-    def test_create_basic_account_api(self, driver, logged_in_admin, login_as, make_account_for_user):
+    def test_create_basic_account_api(self, driver, logged_in_admin, login_as, make_account_for_user,
+                                      savings_account_data):
         """Проверка, что счёт, созданный через API отображается в UI"""
 
         # Подготовка данных через фикстуру make_account_for_user
-        created_new_account = make_account_for_user(user_id=logged_in_admin["id"], initial_balance=222,
-                                                    account_type="SAVINGS")
+        created_new_account = make_account_for_user(user_id=logged_in_admin["id"], **savings_account_data)
         account_number = created_new_account["account"]["account_number"]
 
         # Авторизуемся за пользователя ADMIN
@@ -175,12 +138,9 @@ class TestUIAccounts:
         account_page.assert_page_loaded()
 
         # Узнаем, сколько счетов было ДО создания нового счета
-        accounts_before_create = len(account_page.find_elements(account_page.selectors["account_card"]))
+        accounts_before_create = account_page.get_account_cards_count()
 
-        # Заполняем данные счета
         account_page.open_create_form()
-
-        # Нажимаем кнопку создать счет
         account_page.submit_create()
 
         # Получаем локатор поля выбора пользователя
@@ -193,5 +153,5 @@ class TestUIAccounts:
         assert message and message.strip() != "", "Ожидается сообщение о необходимости выбрать пользователя"
 
         # Проверяем, что количество счетов не изменилось
-        accounts_after_create = len(account_page.find_elements(account_page.selectors["account_card"]))
+        accounts_after_create = account_page.get_account_cards_count()
         assert accounts_after_create == accounts_before_create, f"Количество счетов изменилось: было {accounts_after_create}, стало {accounts_before_create}"

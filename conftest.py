@@ -24,6 +24,7 @@ from selenium.webdriver.edge.options import Options as EdgeOptions
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium.webdriver.support.ui import WebDriverWait
 
+from ui.pages.accounts_page import AccountsPage
 from ui.pages.dashboard_page import DashboardPage
 from ui.pages.login_page import LoginPage
 
@@ -74,6 +75,7 @@ def _get_browser_options(browser_name: str, headless: bool = True):
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--window-size=1920,1080")
+        options.add_argument("--disable-features=PasswordLeakDetection,PasswordManagerOnboarding")
         options.add_experimental_option(
             "prefs",
             {
@@ -552,3 +554,25 @@ def login_as(driver):
         return dashboard_page
 
     return _login
+
+
+@pytest.fixture(scope="function")
+def account_page_as_role(driver, login_as, role):
+    """Логинимся под ролью и открывает страницу счетов"""
+    auth_as_user = login_as(role)
+    auth_as_user.open_accounts()
+    account_page = AccountsPage(driver)
+    account_page.assert_page_loaded()
+    account_page.assert_create_button()
+
+    return account_page
+
+
+@pytest.fixture
+def checking_account_data():
+    return {"account_type": "CHECKING", "initial_balance": 333}
+
+
+@pytest.fixture
+def savings_account_data():
+    return {"account_type": "SAVINGS", "initial_balance": 222}
