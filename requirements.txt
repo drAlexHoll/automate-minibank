@@ -1,15 +1,36 @@
-# Test runner
-pytest
-
-# Browser automation
-selenium>=4.15.0
-
-# Reporting
-allure-pytest
-pytest-html
-
-# Utilities
-python-dotenv
-structlog
-Faker
-httpx  # Replaces requests 
+allure-pytest==2.15.0
+allure-python-commons==2.15.0
+attrs==25.3.0
+beautifulsoup4==4.14.2
+certifi==2025.8.3
+charset-normalizer==3.4.3
+Data-Generator==1.0.1
+dotenv==0.9.9
+exceptiongroup==1.3.0
+h11==0.16.0
+idna==3.10
+iniconfig==2.1.0
+outcome==1.3.0.post0
+packaging==25.0
+pluggy==1.6.0
+Pygments==2.19.2
+PySocks==1.7.1
+pytest==8.4.2
+python-dotenv==1.1.1
+requests==2.32.5
+selenium==4.35.0
+sniffio==1.3.1
+sortedcontainers==2.4.0
+soupsieve==2.8
+structlog==25.4.0
+tomli==2.2.1
+tomlkit==0.13.3
+tqdm==4.67.1
+trio==0.30.0
+trio-websocket==0.12.2
+typing_extensions==4.14.1
+urllib3==1.26.6
+webdriver-manager==4.0.2
+websocket-client==1.8.0
+wsproto==1.2.0
+xlsxwriter==3.2.9
