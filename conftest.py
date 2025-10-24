@@ -27,6 +27,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from ui.pages.accounts_page import AccountsPage
 from ui.pages.dashboard_page import DashboardPage
 from ui.pages.login_page import LoginPage
+from ui.pages.users_page import UsersPage
+from utils.helpers import delete_user_by_email
 
 # ──────────────────────────────────────────────────────────────────────────────
 # СИСТЕМНЫЕ НАСТРОЙКИ И ЛОГИРОВАНИЕ
@@ -576,3 +578,28 @@ def checking_account_data():
 @pytest.fixture
 def savings_account_data():
     return {"account_type": "SAVINGS", "initial_balance": 222}
+
+
+@pytest.fixture
+def open_user_page_as_admin(driver, login_as):
+    """Хеплер с логином под админом и открытие страницы user management"""
+
+    auth_as_admin = login_as(UserRole.ADMIN)
+    auth_as_admin.open_users()
+
+    user_page = UsersPage(driver)
+    user_page.wait_until_loaded()
+
+    return user_page
+
+
+@pytest.fixture(scope="function")
+def user_teardown(api_client):
+    """Фикстура по хранению данных созданного пользователя в случае сбоя и удалению в конце теста"""
+    state = {"email": None}
+
+    yield state
+    email = state.get("email")
+
+    if email:
+        delete_user_by_email(api_client, email)

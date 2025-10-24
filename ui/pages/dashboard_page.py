@@ -9,12 +9,8 @@
 - Вспомогательные проверки (балансы, ошибки)
 """
 
-from selenium import webdriver
-from typing import Optional
 import structlog
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
+from selenium import webdriver
 
 from .base_page import BasePage
 
@@ -48,7 +44,7 @@ class DashboardPage(BasePage):
         """Быстрая проверка загрузки дашборда"""
         dashboard_indicators = [
             '[data-testid="dashboard-overview"]',
-            '[data-testid="dashboard-greeting"]', 
+            '[data-testid="dashboard-greeting"]',
             'nav',
             'main'
         ]
@@ -113,4 +109,8 @@ class DashboardPage(BasePage):
 
     def has_error(self) -> bool:
         """Проверяет наличие ошибки на дашборде"""
-        return self.is_element_visible(self.selectors["error"]) 
+        return self.is_element_visible(self.selectors["error"])
+
+    def has_button_user_management(self) -> bool:
+        """Проверяет, что на странице есть кнопка управление пользователями"""
+        return bool(self.find_elements_by_text("button", "Users"))
