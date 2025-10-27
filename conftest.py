@@ -12,6 +12,7 @@
 
 import base64
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Generator, Dict, Any, Callable
@@ -34,6 +35,44 @@ from utils.helpers import delete_user_by_email
 # СИСТЕМНЫЕ НАСТРОЙКИ И ЛОГИРОВАНИЕ
 # ──────────────────────────────────────────────────────────────────────────────
 # Обеспечиваем absolute-импорты модулей tests (config, utils, ui)
+
+SENSITIVE_KEYS = {
+    "password", "currentPassword", "newPassword",
+    "token", "access_token", "refresh_token",
+    "authorization", "Authorization", "api_key", "Api-Key"
+}
+
+_RE_PASSWORD = re.compile(
+    r'(\[[^\]]*password[^\]]*\].*?with:\s*)(["\']?)([^"\']+)(\2)',
+    re.IGNORECASE,
+)
+
+
+def _redact_string(s: str) -> str:
+    """Маскирует значение пароля в строке лога"""
+    return _RE_PASSWORD.sub(r'\1"******"', s)
+
+
+def _redact(obj):
+    """Рекурсивно маскирует чувствительные данные в объектах (dict, list, str)"""
+    if obj is None:
+        return None
+    if isinstance(obj, dict):
+        return {k: ("******" if k in SENSITIVE_KEYS else _redact(v)) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        t = type(obj)
+        return t(_redact(v) for v in obj)
+    if isinstance(obj, str):
+        return _redact_string(obj)
+    return obj
+
+
+def censor_processor(logger, method_name, event_dict):
+    """Обрабатывает события structlog и маскирует секреты перед записью в логи"""
+    # Рекурсивно маскируем поля события, включая вложенные dict/list
+    return {k: _redact(v) for k, v in event_dict.items()}
+
+
 PROJECT_TESTS_DIR = Path(__file__).parent
 SCREENSHOTS_DIR = PROJECT_TESTS_DIR / "screenshots"
 REPORTS_DIR = PROJECT_TESTS_DIR / "reports"
@@ -53,7 +92,9 @@ structlog.configure(
         structlog.processors.StackInfoRenderer(),
         structlog.processors.format_exc_info,
         structlog.processors.UnicodeDecoder(),
+        censor_processor,
         structlog.processors.JSONRenderer()
+
     ],
     context_class=dict,
     logger_factory=structlog.stdlib.LoggerFactory(),

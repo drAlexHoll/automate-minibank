@@ -4,12 +4,15 @@ UI тесты
 """
 
 import pytest
+import structlog
 from config.settings import settings, UserRole
 from ui.pages.dashboard_page import DashboardPage
 from ui.pages.login_page import LoginPage
 from ui.pages.users_page import UsersPage
 from utils.api_client import MiniBankAPIClient
 from utils.helpers import create_unique_user_data as create_user_data
+
+logger = structlog.get_logger(__name__)
 
 
 @pytest.mark.ui
@@ -22,15 +25,16 @@ class TestUsersManagement:
 
         user_page = open_user_page_as_admin
         user_page.assert_has_users()
-        print(len(user_page.get_all_users()))
+        user_count = len(user_page.get_all_users())
+        logger.info("User count on page", count=user_count)
 
     @pytest.mark.parametrize(
         "role",
         [
-            ("ADMIN"),
-            ("USER"),
-            ("VIP_USER"),
-            ("SUPPORT"),
+            "ADMIN",
+            "USER",
+            "VIP_USER",
+            "SUPPORT",
         ],
         ids=[
             "Create ADMIN account",
@@ -62,8 +66,7 @@ class TestUsersManagement:
             (UserRole.ADMIN, True),
             (UserRole.USER, False),
             (UserRole.SUPPORT, True),
-            (UserRole.VIP_USER, False),
-            # ("VIP_USER"),
+            (UserRole.VIP_USER, False)
         ],
         ids=[
             "Check ADMIN role",
@@ -72,10 +75,12 @@ class TestUsersManagement:
             "Check VIP_USER role"
         ]
     )
-    def test_users_cannot_manage_users(self, driver, login_as, role, expected):
+    def test_user_management_button_visibility_by_role(self, driver, login_as, role, expected):
         """Проверяем различные роли на наличие кнопки Users"""
         user = login_as(role)
-        assert user.has_button_user_management() == expected
+
+        actual_visibility = user.has_button_user_management()
+        assert actual_visibility == expected, f"Для роли {role.value} ожидалось видимость кнопки Users: {expected}, но получено: {actual_visibility}"
 
     def test_create_new_user_without_data(self, driver, open_user_page_as_admin):
         """Создание пользователя без заполнения данных"""
@@ -84,13 +89,11 @@ class TestUsersManagement:
         user_page.open_create_form()
         user_page.submit_create_new_user()
 
-        first_name_input = user_page.selectors["first_name_input"]
-        message_input = user_page.get_attribute(first_name_input, "validationMessage")
+        message_input = user_page.get_required_fields_validation_messages()
 
-        assert message_input.strip(), "Ожидалось сообщение валидации при пустых полях"
-
+        assert message_input, "Ожидалось сообщение о валидации обязательных полей"
         assert user_page.is_element_visible(
-            first_name_input), "Форма создания пользователя закрылась, хотя поля не заполнены"
+            user_page.selectors["create_form"]), "Форма создания пользователя закрылась, хотя поля не заполнены"
 
     def test_create_and_edit_user(self, driver, open_user_page_as_admin, user_teardown):
         """Создание пользователя и изменение информации через UI кнопку Edit"""

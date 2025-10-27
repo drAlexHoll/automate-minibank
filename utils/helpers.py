@@ -93,12 +93,18 @@ def generate_random_email(domain: str = "test.com") -> str:
 
 
 def generate_random_password(length: int = 8) -> str:
-    """Случайный пароль длинной 8 символов"""
-    word = "password"
-    number = str(random.randint(1, 9999))
-    if random.choice([True, False]):
-        return f"{number}{word}"
-    return f"{word}{number}"
+    """Генерирует пароль: хотя бы одна заглавная, строчная, цифра и спецсимвол"""
+    base = [
+        random.choice(string.ascii_uppercase),
+        random.choice(string.ascii_lowercase),
+        random.choice(string.digits),
+        random.choice("!@#$%*")
+    ]
+
+    all_chars = string.ascii_uppercase + string.ascii_lowercase + string.digits + "!@#$%*"
+    base += random.choices(all_chars, k=length - 4)
+    random.shuffle(base)
+    return "".join(base)
 
 
 def generate_random_phone() -> str:

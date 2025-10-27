@@ -22,7 +22,7 @@ class UsersPage(BasePage):
         # Селекторы элементов страницы
         self.selectors.update({
             "page_title": '//h1[normalize-space()="User Management"]',
-            "table": "//div[@style[contains(.,'min-width: 800px')]]",
+            "table": "//div[div[normalize-space()='Name']]/parent::div",
 
             "create_button": '//button[normalize-space()="+ Create User"]',
             "cancel_create_button": '//button[normalize-space()="Cancel"]',
@@ -44,6 +44,7 @@ class UsersPage(BasePage):
     # --------------------------------------------------------------------
     # Реализация абстрактных методов
     # --------------------------------------------------------------------
+
     def is_loaded(self) -> bool:
         """Проверяет загружена ли страница управление пользователями"""
         return self.is_element_immediately_visible(self.selectors["page_title"])
@@ -54,7 +55,9 @@ class UsersPage(BasePage):
 
     def wait_until_form_create_closed(self):
         """Ждем, когда форма создания пользователя закроется"""
-        self.wait_for_condition(not self.is_element_immediately_visible(self.selectors["create_form"]), timeout=1)
+        self.wait_for_condition(
+            lambda: not self.is_element_immediately_visible(self.selectors["create_form"]),
+            timeout=1)
 
     def get_page_title(self) -> str:
         """Получение заголовка страницы"""
@@ -113,6 +116,7 @@ class UsersPage(BasePage):
     def open_edit_button_for_email(self, email: str) -> None:
         """Открываем кнопку Edit у конкретного пользователя"""
         self.click_element(self.selectors["edit_button_by_email"].format(email=email))
+        self.wait_for_element(self.selectors["update_button"])
 
     # --------------------------------------------------------------------
     # Проверки состояния
@@ -122,3 +126,24 @@ class UsersPage(BasePage):
         """Проверяет есть ли в таблице хотя бы один пользователь"""
         users = self._get_users()
         assert len(users) > 0, "В таблице нет ни одного пользователя"
+
+    # --------------------------------------------------------------------
+    # Валидация формы
+    # --------------------------------------------------------------------
+
+    def get_required_fields_validation_messages(self) -> dict:
+        """Возвращает сообщения валидации для всех обязательных полей"""
+
+        required_inputs = [
+            self.selectors["first_name_input"],
+            self.selectors["last_name_input"],
+            self.selectors["email_input"],
+            self.selectors["password_input"],
+        ]
+
+        messages = {}
+        for locator in required_inputs:
+            msg = self.get_attribute(locator, "validationMessage")
+            if msg:
+                messages[locator] = msg.strip()
+        return messages
