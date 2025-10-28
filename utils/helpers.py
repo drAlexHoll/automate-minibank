@@ -11,26 +11,29 @@
 - ПРОСТЕЙШИЕ РАСЧЁТЫ (комиссии)
 """
 
-import time
 import random
 import string
-from typing import Any, Callable, Optional, Dict, List
+import time
 from datetime import datetime, timedelta
+from typing import Any, Callable, Optional, Dict, List
+
 import structlog
+from config.settings import UserRole
 from faker import Faker
 
 faker = Faker()
 
 logger = structlog.get_logger(__name__)
 
+
 # ──────────────────────────────────────────────────────────────────────────────
 # ОЖИДАНИЯ И ПОВТОРЫ
 # ──────────────────────────────────────────────────────────────────────────────
 
 def wait_for_condition(
-    condition_func: Callable[[], bool], 
-    timeout: int = 5000,   # 5 seconds default - configurable
-    interval: int = 100    # 100ms polling for responsiveness
+        condition_func: Callable[[], bool],
+        timeout: int = 5000,  # 5 seconds default - configurable
+        interval: int = 100  # 100ms polling for responsiveness
 ) -> bool:
     """
     Дождаться выполнения условия в течение заданного таймаута (миллисекунды).
@@ -38,7 +41,7 @@ def wait_for_condition(
     """
     start_time = time.time() * 1000
     end_time = start_time + timeout
-    
+
     while time.time() * 1000 < end_time:
         try:
             if condition_func():
@@ -50,16 +53,16 @@ def wait_for_condition(
 
 
 def retry_on_failure(
-    action_func: Callable[[], Any], 
-    max_retries: int = 2,  # Reduced from 3
-    delay: int = 500       # Reduced from 1000
+        action_func: Callable[[], Any],
+        max_retries: int = 2,  # Reduced from 3
+        delay: int = 500  # Reduced from 1000
 ) -> Any:
     """
     Повтор выполнения действия при ошибке (минимальная задержка, линейный backoff).
     Возбуждает последнюю ошибку после исчерпания попыток.
     """
     last_exception = None
-    
+
     for attempt in range(max_retries + 1):
         try:
             return action_func()
@@ -71,6 +74,7 @@ def retry_on_failure(
             sleep_time = (delay + (delay * attempt * 0.5)) / 1000
             logger.warning(f"Attempt {attempt + 1} failed, retrying in {sleep_time}s: {e}")
             time.sleep(sleep_time)
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 # ГЕНЕРАЦИЯ ДАННЫХ
@@ -88,6 +92,21 @@ def generate_random_email(domain: str = "test.com") -> str:
     return f"{username}@{domain}"
 
 
+def generate_random_password(length: int = 8) -> str:
+    """Генерирует пароль: хотя бы одна заглавная, строчная, цифра и спецсимвол"""
+    base = [
+        random.choice(string.ascii_uppercase),
+        random.choice(string.ascii_lowercase),
+        random.choice(string.digits),
+        random.choice("!@#$%*")
+    ]
+
+    all_chars = string.ascii_uppercase + string.ascii_lowercase + string.digits + "!@#$%*"
+    base += random.choices(all_chars, k=length - 4)
+    random.shuffle(base)
+    return "".join(base)
+
+
 def generate_random_phone() -> str:
     """Случайный телефонный номер."""
     return f"+1{random.randint(2000000000, 9999999999)}"
@@ -101,6 +120,7 @@ def generate_random_amount(min_amount: float = 1.0, max_amount: float = 1000.0) 
 def generate_account_number() -> str:
     """Случайный номер счёта."""
     return f"ACC{random.randint(100000000, 999999999)}"
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 # ФОРМАТИРОВАНИЕ И ВАЛИДАЦИЯ
@@ -149,6 +169,7 @@ def validate_amount_format(amount_str: str) -> bool:
     except:
         return False
 
+
 # ──────────────────────────────────────────────────────────────────────────────
 # ДАТЫ
 # ──────────────────────────────────────────────────────────────────────────────
@@ -163,6 +184,7 @@ def get_past_date(days: int = 1) -> str:
     """Дата в прошлом (YYYY-MM-DD)."""
     past_date = datetime.now() - timedelta(days=days)
     return past_date.strftime("%Y-%m-%d")
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 # ФИЛЬТРЫ ДАННЫХ
@@ -184,6 +206,7 @@ def is_test_data(item: Dict, test_indicators: List[str] = None) -> bool:
             return True
     return False
 
+
 # ──────────────────────────────────────────────────────────────────────────────
 # ПРОСТЕЙШИЕ РАСЧЁТЫ
 # ──────────────────────────────────────────────────────────────────────────────
@@ -194,28 +217,30 @@ def calculate_fee(amount: float, fee_percentage: float = 0.05) -> float:
 
 
 def wait_for_element_text_change(
-    element_getter: Callable[[], str], 
-    initial_text: str, 
-    timeout: int = 10000
+        element_getter: Callable[[], str],
+        initial_text: str,
+        timeout: int = 10000
 ) -> bool:
     """Wait for element text to change from initial value"""
+
     def text_changed():
         current_text = element_getter()
         return current_text != initial_text
-    
+
     return wait_for_condition(text_changed, timeout)
 
 
 def wait_for_element_attribute_change(
-    element_getter: Callable[[], Optional[str]], 
-    initial_value: Optional[str], 
-    timeout: int = 10000
+        element_getter: Callable[[], Optional[str]],
+        initial_value: Optional[str],
+        timeout: int = 10000
 ) -> bool:
     """Wait for element attribute to change from initial value"""
+
     def attribute_changed():
         current_value = element_getter()
         return current_value != initial_value
-    
+
     return wait_for_condition(attribute_changed, timeout)
 
 
@@ -226,6 +251,7 @@ def create_unique_user_data() -> Dict[str, Any]:
         "firstName": f"Test{generate_random_string(4)}",
         "lastName": f"User{generate_random_string(4)}",
         "email": generate_random_email(),
+        "password": generate_random_password(),
         # Phone omitted to avoid backend validation issues differing across environments
         "uniqueId": unique_id
     }
@@ -240,14 +266,14 @@ def create_unique_account_data() -> Dict[str, Any]:
 
 
 def create_transfer_data(
-    from_account: str, 
-    to_account: str, 
-    amount: Optional[float] = None
+        from_account: str,
+        to_account: str,
+        amount: Optional[float] = None
 ) -> Dict[str, Any]:
     """Create transfer data for testing"""
     if amount is None:
         amount = generate_random_amount(1, 100)
-    
+
     return {
         "fromAccountId": from_account,
         "toAccountId": to_account,
@@ -270,7 +296,7 @@ def mask_sensitive_data(data: str, mask_char: str = "*", visible_chars: int = 4)
     """Mask sensitive data keeping only last few characters visible"""
     if len(data) <= visible_chars:
         return mask_char * len(data)
-    
+
     masked_part = mask_char * (len(data) - visible_chars)
     visible_part = data[-visible_chars:]
     return masked_part + visible_part
@@ -280,7 +306,7 @@ def safe_get_nested_value(data: Dict, path: str, default: Any = None) -> Any:
     """Safely get nested dictionary value using dot notation"""
     keys = path.split('.')
     current = data
-    
+
     try:
         for key in keys:
             current = current[key]
@@ -302,4 +328,29 @@ def deep_merge_dicts(dict1: Dict, dict2: Dict) -> Dict:
             result[key] = deep_merge_dicts(result[key], value)
         else:
             result[key] = value
-    return result 
+    return result
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Удаление пользователя
+# ──────────────────────────────────────────────────────────────────────────────
+
+def delete_user_by_email(api_client, email: str):
+    """Delete user by email"""
+
+    if not email:
+        return
+
+    # Авторизуемся под администратором
+    api_client.login_as_role(UserRole.ADMIN)
+
+    # Ищем пользователя и получаем id
+    users = api_client.get_users(params={"email": email}).data.get("users", [])
+    target = next((u for u in users if u.get("email") == email), None)
+
+    # Добавить проверку и удаление счетов, если в будущем у пользователя сразу
+    # будет создаваться счета при создании аккаунта
+
+    # Удаляем пользователя
+    user_id = target["id"]
+    api_client.delete_user(user_id)

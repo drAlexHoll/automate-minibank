@@ -12,6 +12,7 @@
 
 import base64
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Generator, Dict, Any, Callable
@@ -27,11 +28,51 @@ from selenium.webdriver.support.ui import WebDriverWait
 from ui.pages.accounts_page import AccountsPage
 from ui.pages.dashboard_page import DashboardPage
 from ui.pages.login_page import LoginPage
+from ui.pages.users_page import UsersPage
+from utils.helpers import delete_user_by_email
 
 # ──────────────────────────────────────────────────────────────────────────────
 # СИСТЕМНЫЕ НАСТРОЙКИ И ЛОГИРОВАНИЕ
 # ──────────────────────────────────────────────────────────────────────────────
 # Обеспечиваем absolute-импорты модулей tests (config, utils, ui)
+
+SENSITIVE_KEYS = {
+    "password", "currentPassword", "newPassword",
+    "token", "access_token", "refresh_token",
+    "authorization", "Authorization", "api_key", "Api-Key"
+}
+
+_RE_PASSWORD = re.compile(
+    r'(\[[^\]]*password[^\]]*\].*?with:\s*)(["\']?)([^"\']+)(\2)',
+    re.IGNORECASE,
+)
+
+
+def _redact_string(s: str) -> str:
+    """Маскирует значение пароля в строке лога"""
+    return _RE_PASSWORD.sub(r'\1"******"', s)
+
+
+def _redact(obj):
+    """Рекурсивно маскирует чувствительные данные в объектах (dict, list, str)"""
+    if obj is None:
+        return None
+    if isinstance(obj, dict):
+        return {k: ("******" if k in SENSITIVE_KEYS else _redact(v)) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        t = type(obj)
+        return t(_redact(v) for v in obj)
+    if isinstance(obj, str):
+        return _redact_string(obj)
+    return obj
+
+
+def censor_processor(logger, method_name, event_dict):
+    """Обрабатывает события structlog и маскирует секреты перед записью в логи"""
+    # Рекурсивно маскируем поля события, включая вложенные dict/list
+    return {k: _redact(v) for k, v in event_dict.items()}
+
+
 PROJECT_TESTS_DIR = Path(__file__).parent
 SCREENSHOTS_DIR = PROJECT_TESTS_DIR / "screenshots"
 REPORTS_DIR = PROJECT_TESTS_DIR / "reports"
@@ -51,7 +92,9 @@ structlog.configure(
         structlog.processors.StackInfoRenderer(),
         structlog.processors.format_exc_info,
         structlog.processors.UnicodeDecoder(),
+        censor_processor,
         structlog.processors.JSONRenderer()
+
     ],
     context_class=dict,
     logger_factory=structlog.stdlib.LoggerFactory(),
@@ -576,3 +619,28 @@ def checking_account_data():
 @pytest.fixture
 def savings_account_data():
     return {"account_type": "SAVINGS", "initial_balance": 222}
+
+
+@pytest.fixture
+def open_user_page_as_admin(driver, login_as):
+    """Хеплер с логином под админом и открытие страницы user management"""
+
+    auth_as_admin = login_as(UserRole.ADMIN)
+    auth_as_admin.open_users()
+
+    user_page = UsersPage(driver)
+    user_page.wait_until_loaded()
+
+    return user_page
+
+
+@pytest.fixture(scope="function")
+def user_teardown(api_client):
+    """Фикстура по хранению данных созданного пользователя в случае сбоя и удалению в конце теста"""
+    state = {"email": None}
+
+    yield state
+    email = state.get("email")
+
+    if email:
+        delete_user_by_email(api_client, email)
