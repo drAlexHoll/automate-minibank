@@ -31,10 +31,10 @@ class TestUsersManagement:
     @pytest.mark.parametrize(
         "role",
         [
-            "ADMIN",
-            "USER",
-            "VIP_USER",
-            "SUPPORT",
+            UserRole.ADMIN,
+            UserRole.USER,
+            UserRole.VIP_USER,
+            UserRole.SUPPORT,
         ],
         ids=[
             "Create ADMIN account",
@@ -48,7 +48,7 @@ class TestUsersManagement:
 
         user_page = open_user_page_as_admin
         user_data = create_user_data()
-        user_page.create_new_user(user_data, role)
+        user_page.create_new_user(user_data, role.value)
 
         # Записываем созданный email для последующего удаления
         user_teardown["email"] = user_data["email"]
