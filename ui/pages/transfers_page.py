@@ -10,13 +10,12 @@
 - Проверки состояния (успех/ошибка)
 """
 
+import time
+from typing import Optional
+
+import structlog
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from typing import Optional
-import structlog
-import time
 from selenium.webdriver.support.ui import Select
 
 from .base_page import BasePage
@@ -33,7 +32,7 @@ class TransfersPage(BasePage):
         # Селекторы элементов страницы
         self.selectors.update({
             "page_container": '[data-testid="transfers-page"]',
-            "transfer_form": '[data-testid="transfer-form"]', 
+            "transfer_form": '[data-testid="transfer-form"]',
             "from_account_select": '[data-testid="from-account-select"]',
             "to_account_select": '[data-testid="to-account-select"]',
             "amount_input": '[data-testid="amount-input"]',
@@ -80,7 +79,8 @@ class TransfersPage(BasePage):
             except Exception:
                 pass
             time.sleep(0.2)
-        raise AssertionError(f"В select {select_selector} не появилась опция со значением value='{option_value}' за {timeout}с")
+        raise AssertionError(
+            f"В select {select_selector} не появилась опция со значением value='{option_value}' за {timeout}с")
 
     # ----------------------------------------------------------------
     # Действия на странице
@@ -113,7 +113,7 @@ class TransfersPage(BasePage):
             self.click_element(self.selectors["my_account_button"])
         except:
             pass  # Кнопка может уже быть выбрана
-        
+
         self.select_from_account(from_account)
         self.select_to_account(to_account)
         self.enter_amount(amount)
@@ -149,7 +149,7 @@ class TransfersPage(BasePage):
                 except:
                     pass
                 success_indicators = [
-                    "Transfer completed", "successfully", "Success", 
+                    "Transfer completed", "successfully", "Success",
                     "INTERNAL", "Fee Amount: $0.00"
                 ]
                 for indicator in success_indicators:
@@ -178,6 +178,39 @@ class TransfersPage(BasePage):
             self.logger.error(f"Failed to detect transfer result: {e}")
         return result
 
+    def wait_for_accounts_loaded(self, account_id: str) -> None:
+        """Ожидает, что в селекте появится опция с указанным account_id"""
+        self._wait_for_select_option(self.selectors["from_account_select"], account_id)
+
+    def get_available_accounts(self) -> list[dict]:
+        """Возвращает список доступных счетчиков"""
+        select_element = self.wait_for_element(self.selectors["from_account_select"])
+        select = Select(select_element)
+
+        accounts = []
+        for opt in select.options:
+            value = (opt.get_attribute("value") or "").strip()
+            if value:
+                accounts.append({"value": value, "text": opt.text.strip()})
+
+        return accounts
+
+    def make_transfer(self, from_account_id: str, to_account_id: str, amount: float, description: str = ""):
+        """Создает перевод между счетами"""
+        self.select_option(self.selectors["from_account_select"], from_account_id)
+        self.select_option(self.selectors["to_account_select"], to_account_id)
+        amount_str = str(amount)
+        try:
+            float(amount_str.replace(",", "."))
+            self.fill_input(self.selectors["amount_input"], amount_str)
+        except ValueError:
+            self.clear_input(self.selectors["amount_input"])
+
+        if description:
+            self.fill_input(self.selectors["description_input"], description)
+
+        self.click_element(self.selectors["submit_button"])
+
     # ----------------------------------------------------------------
     # Проверки состояния
     # ----------------------------------------------------------------
@@ -188,7 +221,7 @@ class TransfersPage(BasePage):
         success_texts = ["Transfer completed", "successfully", "Success"]
         for text in success_texts:
             try:
-                self.wait_for_element_by_text("*", text, timeout=2)
+                self.wait_for_element_by_text("*", text, timeout=1)
                 return
             except:
                 continue
@@ -196,13 +229,34 @@ class TransfersPage(BasePage):
 
     def assert_error_message(self):
         """Проверяет отображение сообщения об ошибке."""
-        if self.is_element_visible(self.selectors["error_message"]):
+        if self.is_element_visible(self.selectors["error_message"], timeout=1):
             return
-        error_texts = ["error", "failed", "invalid", "required"]
+        error_texts = ["limit", "valid", "error", "failed", "invalid", "required"]
         for text in error_texts:
             try:
-                self.wait_for_element_by_text("*", text, timeout=2)
+                self.wait_for_element_by_text("*", text, timeout=1)
                 return
             except:
                 continue
-        raise AssertionError("Error message not visible") 
+        raise AssertionError("Error message not visible")
+
+    def assert_accounts_available(self, min_count: int = 1):
+        """Проверка, что доступно N счетчиков"""
+        accounts = self.get_available_accounts()
+        assert len(accounts) >= min_count, f"Ожидалось минимум{min_count} счет(ов), а найдено {len(accounts)}"
+
+    # ----------------------------------------------------------------
+    # Проверки наличия элементов
+    # ----------------------------------------------------------------
+    def assert_form_elements_visible(self):
+        """Проверяет, что все важные элементы видны на странице"""
+        expect_elements = [
+            "transfer_form",
+            "from_account_select",
+            "to_account_select",
+            "amount_input",
+            "description_input",
+            "submit_button",
+        ]
+        for key in expect_elements:
+            assert (self.is_element_visible(self.selectors[key])), f"Элемент {key} не отображается"
