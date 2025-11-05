@@ -28,6 +28,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from ui.pages.accounts_page import AccountsPage
 from ui.pages.dashboard_page import DashboardPage
 from ui.pages.login_page import LoginPage
+from ui.pages.transfers_page import TransfersPage
 from ui.pages.users_page import UsersPage
 from utils.helpers import delete_user_by_email
 
@@ -459,7 +460,7 @@ def user_with_two_accounts(api_client: MiniBankAPIClient):
 
     print(f"✅ Обновлены счета с user_id: {account1['user_id']}")
 
-    return {
+    yield {
         "user": user,
         "credentials": {
             "email": user["email"],
@@ -469,6 +470,9 @@ def user_with_two_accounts(api_client: MiniBankAPIClient):
         "target_account": account2,
         "accounts": [account1, account2]
     }
+
+    from utils.helpers import delete_user_by_email
+    delete_user_by_email(api_client, user["email"])
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -644,3 +648,57 @@ def user_teardown(api_client):
 
     if email:
         delete_user_by_email(api_client, email)
+
+
+@pytest.fixture(scope="function")
+def transfers_page_as_user(driver, user_with_two_accounts):
+    """Логин под тестовым пользователем и открытие страницы Transfers"""
+    creds = user_with_two_accounts["credentials"]
+    src_id = user_with_two_accounts["source_account"]["id"]
+
+    # UI логин
+    login_page = LoginPage(driver)
+    login_page.navigate_to()
+    login_page.assert_page_loaded()
+    login_page.login(creds["email"], creds["password"])
+
+    # Основная страница (dashboard) и переход на Transfers
+    dashboard_page = DashboardPage(driver)
+    dashboard_page.assert_page_loaded()
+    dashboard_page.open_transfers()
+
+    transfers_page = TransfersPage(driver)
+    transfers_page.wait_until_loaded()
+    transfers_page.wait_for_accounts_loaded(src_id)
+
+    # Проверки основных элементов форм
+    transfers_page.assert_form_elements_visible()
+    return {
+        **user_with_two_accounts,
+        "transfers_page": transfers_page,
+    }
+
+
+def _get_balance(api_client, source_account: str, target_account: str) -> tuple[float, float]:
+    """Возвращает текущие балансы исходного и целевого счетов через API"""
+    account_response = api_client.get_accounts()
+    assert account_response.success, f"Не удалось получить счета: {account_response.message}"
+
+    accounts = account_response.data["accounts"]
+    source_after = float(next((a["balance"] for a in accounts if a["id"] == source_account), None))
+    target_after = float(next((a["balance"] for a in accounts if a["id"] == target_account), None))
+    return source_after, target_after
+
+
+def assert_balance_delta(api_client, source_account: str, target_account: str, source_before: float,
+                         target_before: float, delta: float) -> None:
+    """Проверяет изменение балансов после перевода и логирует результаты"""
+    source_after, target_after = _get_balance(api_client, source_account, target_account)
+    assert source_after == source_before - delta, f"Баланс отправителя: ожидалось {source_before - delta}, получено {source_after}"
+    assert target_after == target_before + delta, f"Баланс получателя: ожидалось {target_before + delta}, получено {target_after}"
+    logger.info("Transfer completed",
+                source_before=source_before,
+                source_after=source_after,
+                target_before=target_before,
+                target_after=target_after,
+                amount=delta)
